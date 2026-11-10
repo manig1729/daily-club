@@ -1,0 +1,7 @@
+# Contributor guide
+## Current implementation
+Next.js App Router + React, plain CSS, Supabase email OTP auth/Postgres. app/page.js contains the client dashboard and seven-game catalog; app/globals.css defines responsive cream/green styling. lib/ranking.mjs contains ranking with competition ties, covered by a Node test. supabase/schema.sql creates groups, memberships, scores, RLS and guarded create/join RPCs. README documents local setup, hosting and limitations.
+## Rules
+Keep secrets out of Git. Only public Supabase URL/anon key belong in NEXT_PUBLIC variables. Never bypass row-level security or expose service-role credentials. Group membership must protect every shared query. Render user text as text, never HTML. Keep score uniqueness and tie behavior. Do not assume share formats or introduce parsers without real sample fixtures. Use migrations for subsequent database changes rather than rerunning schema.sql. Preserve mobile accessibility and explicit labels. Run npm test and npm run build for behavior changes. Document new environment variables and setup steps.
+## Next priorities
+Confirm game URLs and units with the owners; add share-format fixtures and parsers, result history, invite rotation/member management, auth/database integration tests and realtime refresh. Currently manual sharing and database-backed clubs require user-provided Supabase configuration. No remote repository or deployment has been created.

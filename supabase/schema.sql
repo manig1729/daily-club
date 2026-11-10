@@ -1,0 +1,17 @@
+create extension if not exists pgcrypto;
+create table public.groups(id uuid primary key default gen_random_uuid(), name text not null check(length(name) between 1 and 60), invite_code text unique not null default encode(gen_random_bytes(16),'hex'));
+create table public.members(group_id uuid references public.groups on delete cascade,user_id uuid references auth.users on delete cascade,primary key(group_id,user_id));
+create table public.scores(id uuid primary key default gen_random_uuid(),group_id uuid references public.groups on delete cascade,user_id uuid references auth.users on delete cascade,game text not null check(game in ('Krillion','MapTap','Fermi','Worldle','Statele','Dialed','Noillirk')),puzzle_date date not null,score numeric not null check(score>=0 and score<1000000000),display_name text not null check(length(display_name) between 1 and 40),share_text text check(length(share_text)<=2000),unique(group_id,user_id,game,puzzle_date));
+create function public.is_member(g uuid) returns boolean language sql stable security definer set search_path=public as $$ select exists(select 1 from members where group_id=g and user_id=auth.uid()) $$;
+alter table public.groups enable row level security;
+alter table public.members enable row level security;
+alter table public.scores enable row level security;
+create policy group_read on public.groups for select to authenticated using(public.is_member(id));
+create policy member_read on public.members for select to authenticated using(public.is_member(group_id));
+create policy score_read on public.scores for select to authenticated using(public.is_member(group_id));
+create policy score_insert on public.scores for insert to authenticated with check(user_id=auth.uid() and public.is_member(group_id));
+create policy score_update on public.scores for update to authenticated using(user_id=auth.uid() and public.is_member(group_id)) with check(user_id=auth.uid() and public.is_member(group_id));
+create function public.create_club(club_name text) returns uuid language plpgsql security definer set search_path=public as $$ declare g uuid; begin if auth.uid() is null then raise exception 'Sign in first'; end if; insert into groups(name) values(trim(club_name)) returning id into g; insert into members values(g,auth.uid()); return g; end $$;
+create function public.join_club(code text) returns uuid language plpgsql security definer set search_path=public as $$ declare g uuid; begin if auth.uid() is null then raise exception 'Sign in first'; end if; select id into g from groups where invite_code=code; if g is null then raise exception 'Invalid invite code'; end if; insert into members values(g,auth.uid()) on conflict do nothing; return g; end $$;
+revoke all on function public.create_club(text),public.join_club(text),public.is_member(uuid) from public,anon;
+grant execute on function public.create_club(text),public.join_club(text),public.is_member(uuid) to authenticated;

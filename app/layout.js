@@ -1,0 +1,1 @@
+import './globals.css'; export const metadata={title:'Daily Club',description:'Your daily games, together.'}; export default function Layout({children}){return <html lang="en"><body>{children}</body></html>}
